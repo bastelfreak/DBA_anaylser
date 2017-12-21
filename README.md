@@ -38,6 +38,7 @@ collation_server = utf8mb4_unicode_ci
 character_set_server = utf8mb4
 innodb_file_per_table = 1
 innodb_large_prefix = 1
+innodb_buffer_pool_size=1G
 
 [mysql]
 default-character-set = utf8mb4
@@ -54,6 +55,56 @@ restarted:
 ```bash
 systemctl restart mysqld
 ```
+
+### Datasets
+
+We have one tables, called datasets, which holds all of our data. Since this is
+is a big data application, we get the data not in the third normal form, that
+would not scale. Instead we have datasets, a single dataset is a collection of
+key-value information, represented as a JSON object. An example is:
+
+```json
+{"Gender": "Female", "Birthday": "1995-03-17 11:49:30.000000", "federate_state": "Bayern", "car_manufacturer": "Porsche"}
+```
+
+Each dataset contains the same attributes. They are:
+
+* Gender (Male or Female)
+* Birthday (all people are 20 to 45 years old)
+* Federate state (one of our 16 federate states)
+* Car manufacturer (Full list of values is stored in the table
+
+```
+$ mysql --database bigdata --execute "SELECT name FROM car_manufacturers"
++---------------+
+| name          |
++---------------+
+| Aston Martin  |
+| Audi          |
+| BMW           |
+| Ford          |
+| Mercedes-Benz |
+| Opel          |
+| Porsche       |
+| Toyota        |
++---------------+
+```
+
+## BigData basics
+
+The amount of data is always quite high in such an environment. In this case
+we have more than one million datasets. An analyser gets always tested with
+only 10%-20% of the data. If the analyser looks right, it will be executed on
+all datasets. At the end the results will be compared. The analyser is working
+and the data has a good quality if the results match
+
+
+
+
+
+
+
+
 
 ## MySQL Cheat Sheet
 
@@ -127,4 +178,12 @@ SELECT
             federate_states
         ORDER BY RAND()
         LIMIT 1) AS federate_state;
+```
+
+Get the correct size for innodb\_buffer\_pool\_size
+
+```sql
+SELECT CEILING(Total_InnoDB_Bytes*1.6/POWER(1024,3)) RIBPS FROM
+(SELECT SUM(data_length+index_length) Total_InnoDB_Bytes
+FROM information_schema.tables WHERE engine='InnoDB') A;
 ```
