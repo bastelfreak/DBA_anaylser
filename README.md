@@ -3,7 +3,9 @@
 ## Table of contents
 
 * Setup
-
+* Datasets
+* Situation
+* MySQL Cheat Sheet
 
 ---
 
@@ -56,7 +58,7 @@ restarted:
 systemctl restart mysqld
 ```
 
-### Datasets
+## Datasets
 
 We have one tables, called datasets, which holds all of our data. Since this is
 is a big data application, we get the data not in the third normal form, that
@@ -64,7 +66,7 @@ would not scale. Instead we have datasets, a single dataset is a collection of
 key-value information, represented as a JSON object. An example is:
 
 ```json
-{"Gender": "Female", "Birthday": "1995-03-17 11:49:30.000000", "federate_state": "Bayern", "car_manufacturer": "Porsche"}
+{"Gender": "Female", "Birthday": "1995-03-17 11:49:30.000000", "federate_state": "Bayern", "car_manufacturer": "Porsche", "Relationship": "Single"}
 ```
 
 Each dataset contains the same attributes. They are:
@@ -72,10 +74,11 @@ Each dataset contains the same attributes. They are:
 * Gender (Male or Female)
 * Birthday (all people are 20 to 45 years old)
 * Federate state (one of our 16 federate states)
-* Car manufacturer (Full list of values is stored in the table
+* Car manufacturer (Full list of values is stored in the table)
+* Relationship (Single, Married)
 
 ```
-$ mysql --database bigdata --execute "SELECT name FROM car_manufacturers"
+$ mysql --database bigdata --execute "SELECT name FROM car\_manufacturers"
 +---------------+
 | name          |
 +---------------+
@@ -90,18 +93,61 @@ $ mysql --database bigdata --execute "SELECT name FROM car_manufacturers"
 +---------------+
 ```
 
-## BigData basics
+There is often some metadata attached to a dataset. For example:
+
+* id (uniq id for the dataset)
+* created\_at (timestamp when the dataset was created)
+* updated\_at (timestamp wehn the data was updated the last time, defaults to created\_at)
+
+### BigData basics
 
 The amount of data is always quite high in such an environment. In this case
 we have more than one million datasets. An analyser gets always tested with
 only 10%-20% of the data. If the analyser looks right, it will be executed on
 all datasets. At the end the results will be compared. The analyser is working
-and the data has a good quality if the results match
+and the data has a good quality if the results match. Often the datasets
+contain more information than needed.
 
+## Situation
 
+Our company has many million customers. For a new business case we need to
+determine the yearly income of our customers. We want to launch a regional
+product (limited to a federate state) for people with a low income. We bought
+some data from car manufacturers and we now know the prices for their cars and
+the state of the relationship frmo the buyer. Each of our customers with a
+Porsche or Aston Martin has an income that is too high for our product, we need
+to filter those people out. People that are single and drive an Audi tend to
+drive one of the more expensive modells, so we need to filter them out. It is
+the opposite on Mercedes-Benz.
 
+We want to launch our product 3 times (in three federal states). We want to
+know which four federate states contain the most potential customers in
+absolute numbers on the one side, and on the other side the four states
+with the most potential customers in it in relation the the amount of current
+customers in it.
 
+### Implementation
 
+We will start with 100.000 datasets. First of we will filter all the really
+expensive cars out. Each step will be saved in a temporary table. Those tables
+only contain the result set from the previous query and are stored in memory.
+They are automatically deleted after our session terminates. We don't need to
+care of garbadge collection. To keep the memory footprint low it is still a
+good idea to drop temporary tables when we know we do not need them again.
+
+```sql
+CREATE TEMPORARY TABLE filtered AS SELECT dataset FROM datasets LIMIT 100000;
+CREATE TEMPORARY TABLE filtered_expensive_cars AS SELECT dataset FROM filtered WHERE dataset->'$.car_manufacturer' != 'Aston Martin';
+DROP TABLE filtered;
+CREATE TEMPORARY TABLE filtered_more_expensive_cars AS SELECT dataset from filtered_expensive_cars WHERE dataset->'$.car_manufacturer' != 'Porsche';
+DROP TABLE filtered_expensive_cars;
+CREATE TEMPORARY TABLE filtered_even_more_expensive_cars AS SELECT dataset FROM filtered_more_expensive_cars WHERE NOT (dataset->'$.relationship' = 'Single' and dataset->'$.car_manufacturer' = 'Audi');
+DROP TABLE filtered_more_expensive_cars;
+CREATE TEMPORARY TABLE final_cars_filtered AS SELECT dataset FROM filtered_even_more_expensive_cars WHERE NOT (dataset->'$.relationship' = 'Married' and dataset->'$.car_manufacturer' = 'Mercedes-Benz');
+DROP TABLE filtered_even_more_expensive_cars;
+SELECT COUNT(dataset) as customer, dataset->'$.federate_state' as federate_state FROM final_cars_filtered GROUP BY dataset->'$.federate_state' ORDER BY customer DESC LIMIT 4;
+SELECT COUNT(dataset) as customer, dataset->'$.federate_state' as federate_state FROM filtered GROUP BY dataset->'$.federate_state' ORDER BY customer DESC;
+```
 
 
 
@@ -186,4 +232,10 @@ Get the correct size for innodb\_buffer\_pool\_size
 SELECT CEILING(Total_InnoDB_Bytes*1.6/POWER(1024,3)) RIBPS FROM
 (SELECT SUM(data_length+index_length) Total_InnoDB_Bytes
 FROM information_schema.tables WHERE engine='InnoDB') A;
+```
+
+Show temporary tables
+
+```sql
+SELECT * FROM INFORMATION_SCHEMA.TEMPORARY_TABLES;
 ```
