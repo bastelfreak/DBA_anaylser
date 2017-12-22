@@ -1,4 +1,10 @@
-CREATE DATABASE `bigdata` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+DROP DATABASE IF EXISTS `bigdata`;
+
+CREATE DATABASE `bigdata`;
+
+ALTER DATABASE `bigdata` CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+USE bigdata;
 
 CREATE TABLE `bigdata`.`genders` (
   `id` INT NOT NULL AUTO_INCREMENT,
@@ -36,7 +42,7 @@ CREATE TABLE `bigdata`.`datasets` (
 
 /* data for our generator */
 
-insert INTO bigdata.car_manufacturers (name) values ('BMW'), ('Audi'), ('Ford'), ('Porsche'), ('Opel'), ('Mercedes-Benz'), ('Aston Martin'), ('Toyota');
+INSERT INTO bigdata.car_manufacturers (name) values ('BMW'), ('Audi'), ('Ford'), ('Porsche'), ('Opel'), ('Mercedes-Benz'), ('Aston Martin'), ('Toyota');
 INSERT INTO bigdata.federate_states (name) VALUES ('NRW'), ('Baden-Württemberg'), ('Bayern'), ('Berlin'), ('Bremen'), ('Hamburg'), ('Brandenburg'), ('Hessen'), ('Sachsen'), ('Mecklenburg-Vorpommern'), ('Niedersachsen'), ('Rheinland-Pfalz'), ('Saarland'), ('Sachsen-Anhalt'), ('Schleswig-Holstein'), ('Thüringen');
 INSERT INTO bigdata.genders (name) VALUES ('Female'), ('Male');
 INSERT INTO bigdata.relationships (name) VALUES ('Single'), ('Married');
