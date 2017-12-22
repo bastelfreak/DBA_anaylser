@@ -2,11 +2,11 @@
 
 ## Table of contents
 
-* Setup
-* Datasets
-* Situation
-* MySQL Cheat Sheet
-
+* [Setup](#setup)
+* [Datasets](#datasets)
+* [Situation](#situation)
+* [MySQL Cheat Sheet](#mysql-cheat-sheet)
+* [References](#references)
 ---
 
 ## Setup
@@ -56,6 +56,12 @@ restarted:
 
 ```bash
 systemctl restart mysqld
+```
+
+Now you can import the SQL files:
+
+```
+cat *.sql | mysql --user root -p
 ```
 
 ## Datasets
@@ -138,7 +144,6 @@ good idea to drop temporary tables when we know we do not need them again.
 ```sql
 CREATE TEMPORARY TABLE filtered AS SELECT dataset FROM datasets LIMIT 100000;
 CREATE TEMPORARY TABLE filtered_expensive_cars AS SELECT dataset FROM filtered WHERE dataset->'$.car_manufacturer' != 'Aston Martin';
-DROP TABLE filtered;
 CREATE TEMPORARY TABLE filtered_more_expensive_cars AS SELECT dataset from filtered_expensive_cars WHERE dataset->'$.car_manufacturer' != 'Porsche';
 DROP TABLE filtered_expensive_cars;
 CREATE TEMPORARY TABLE filtered_even_more_expensive_cars AS SELECT dataset FROM filtered_more_expensive_cars WHERE NOT (dataset->'$.relationship' = 'Single' and dataset->'$.car_manufacturer' = 'Audi');
@@ -147,6 +152,9 @@ CREATE TEMPORARY TABLE final_cars_filtered AS SELECT dataset FROM filtered_even_
 DROP TABLE filtered_even_more_expensive_cars;
 SELECT COUNT(dataset) as customer, dataset->'$.federate_state' as federate_state FROM final_cars_filtered GROUP BY dataset->'$.federate_state' ORDER BY customer DESC LIMIT 4;
 SELECT COUNT(dataset) as customer, dataset->'$.federate_state' as federate_state FROM filtered GROUP BY dataset->'$.federate_state' ORDER BY customer DESC;
+CREATE TEMPORARY TABLE potential_customers_by_federate_state AS SELECT COUNT(dataset) as customer, dataset->'$.federate_state' as federate_state FROM final_cars_filtered GROUP BY dataset->'$.federate_state' ORDER BY customer DESC;
+CREATE TEMPORARY TABLE all_customers_by_federate_state SELECT COUNT(dataset) as customer, dataset->'$.federate_state' as federate_state FROM filtered GROUP BY dataset->'$.federate_state' ORDER BY customer DESC;
+SELECT potential_customers, all_customers, federate_state, 100 / all_customers * potential_customers as potential_customer_in_percent FROM (SELECT potential_customers_by_federate_state.federate_state, potential_customers_by_federate_state.customer as potential_customers, all_customers_by_federate_state.customer as all_customers FROM potential_customers_by_federate_state INNER JOIN all_customers_by_federate_state ON all_customers_by_federate_state.federate_state = potential_customers_by_federate_state.federate_state) AS derieved_table ORDER BY potential_customers DESC;
 ```
 
 
@@ -239,3 +247,7 @@ Show temporary tables
 ```sql
 SELECT * FROM INFORMATION_SCHEMA.TEMPORARY_TABLES;
 ```
+
+## References
+
+* [MySQL and Unicode](https://mathiasbynens.be/notes/mysql-utf8mb4)

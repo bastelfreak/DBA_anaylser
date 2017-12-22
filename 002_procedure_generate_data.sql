@@ -1,3 +1,5 @@
+USE bigdata;
+
 DELIMITER $$
 DROP PROCEDURE IF EXISTS generate_data$$
 CREATE PROCEDURE generate_data()
