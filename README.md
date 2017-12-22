@@ -13,7 +13,7 @@
 
 ### Basics
 This section explains the installation of the server + data generation. We
-start with the setup of the actual SQL server. We will use percona here, it is
+start with the setup of the actual SQL server. We will use percona here; it is
 binary-compatible with MySQL but has a license that fits better into open
 source projects (GPL). The following statements as root user on Archlinux will
 prepare the database-(server):
@@ -66,9 +66,9 @@ cat *.sql | mysql --user root -p
 
 ## Datasets
 
-We have one tables, called datasets, which holds all of our data. Since this is
-is a big data application, we get the data not in the third normal form, that
-would not scale. Instead we have datasets, a single dataset is a collection of
+We have one table, called datasets, which holds all of our data. Since this is
+is a big data application, we get the data not in the third normal form which
+would not scale. Instead we have datasets. A single dataset is a collection of
 key-value information, represented as a JSON object. An example is:
 
 ```json
@@ -120,25 +120,25 @@ Our company has many million customers. For a new business case we need to
 determine the yearly income of our customers. We want to launch a regional
 product (limited to a federate state) for people with a low income. We bought
 some data from car manufacturers and we now know the prices for their cars and
-the state of the relationship frmo the buyer. Each of our customers with a
-Porsche or Aston Martin has an income that is too high for our product, we need
+the state of the relationship from the buyer. Each of our customers with a
+Porsche or Aston Martin has an income that is too high for our product, so we need
 to filter those people out. People that are single and drive an Audi tend to
-drive one of the more expensive modells, so we need to filter them out. It is
+drive one of the more expensive models, so we need to filter them out. It is
 the opposite on Mercedes-Benz.
 
 We want to launch our product 3 times (in three federal states). We want to
 know which four federate states contain the most potential customers in
 absolute numbers on the one side, and on the other side the four states
-with the most potential customers in it in relation the the amount of current
+with the most potential customers in it in relation to the amount of current
 customers in it.
 
 ### Implementation
 
-We will start with 100.000 datasets. First of we will filter all the really
+We will start with 100.000 datasets. First we will filter all the really
 expensive cars out. Each step will be saved in a temporary table. Those tables
 only contain the result set from the previous query and are stored in memory.
 They are automatically deleted after our session terminates. We don't need to
-care of garbadge collection. To keep the memory footprint low it is still a
+take care of garbage collection. To keep the memory footprint low it is still a
 good idea to drop temporary tables when we know we do not need them again.
 
 ```sql
